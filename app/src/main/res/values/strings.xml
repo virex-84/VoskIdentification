@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">VoskIdentification</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="nav_header_title">Android Studio</string>
+    <string name="nav_header_subtitle">android.studio@android.com</string>
+    <string name="nav_header_desc">Navigation header</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="menu_home">Home</string>
+
+    <string name="Ready">Начать</string>
+    <string name="Stop">Остановить</string>
+    <string name="Why_permissions_need">Это разрешение нужно для использования микрофона</string>
+    <string name="Error_grand_permission">Не дано разрешение на использование микрофона!</string>
+    <string name="recognized_text">Распознанный текст:</string>
+    <string name="recognized_results">История:</string>
+    <string name="Wait_voice">Говорите в микрофон…</string>
+    <string name="Read_Complete">Чтение завершено. Микрофон выключен</string>
+    <string name="Recognize_error">Не удалось использовать микрофон. Возможно, микрофон уже используется.</string>
+    <string name="recognized_users">Пользователи:</string>
+</resources>
