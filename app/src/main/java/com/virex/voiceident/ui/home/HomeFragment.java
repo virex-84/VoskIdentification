@@ -96,7 +96,7 @@ public class HomeFragment extends Fragment implements  RecognitionListener {
 
         setUiState(State.STATE_READY);
 
-        LibVosk.setLogLevel(LogLevel.WARNINGS);
+        LibVosk.setLogLevel(LogLevel.DEBUG);
 
         binding.btnVoice.setOnClickListener(v -> {
 
@@ -143,9 +143,9 @@ public class HomeFragment extends Fragment implements  RecognitionListener {
                 .unpack("vosk-model-spk-0.4","models")
                 .setCallback(new StorageService.Callback() {
                     @Override
-                    public void onComplete(ArrayList<ModelInfo> modelInfos) {
+                    public void onComplete(ArrayList<ModelInfo> models) {
                         try {
-                            for(ModelInfo modelInfo : modelInfos){
+                            for(ModelInfo modelInfo : models){
                                 if (modelInfo.type.equals("voice")) model    = new Model(modelInfo.absolutePath);
                                 if (modelInfo.type.equals("spk"))   modelSpk = new SpeakerModel(modelInfo.absolutePath);
                             }
@@ -162,38 +162,6 @@ public class HomeFragment extends Fragment implements  RecognitionListener {
                     }
                 })
                 .process();
-
-
-        /*
-        AssetManager assetManager = requireActivity().getAssets();
-        File externalFilesDir = requireActivity().getExternalFilesDir(null);
-        if (externalFilesDir == null) {
-            throw new RuntimeException("cannot get external files dir, "
-                    + "external storage state is " + Environment.getExternalStorageState());
-        }
-        String sourcePathModel = "model-ru-ru";
-        File targetPathModel = new File(externalFilesDir, "model-ru-ru");
-
-        String sourcePathSpk = "vosk-model-spk-0.4";
-        File targetPathSpk = new File(externalFilesDir, "vosk-model-spk-0.4");
-
-        try {
-            Utils.clearPath(targetPathModel);
-            Utils.copyAssetPath(assetManager, sourcePathModel, targetPathModel.getAbsolutePath());
-
-            Utils.clearPath(targetPathSpk);
-            Utils.copyAssetPath(assetManager, sourcePathSpk, targetPathSpk.getAbsolutePath());
-        } catch(Exception ignore){}
-
-        try {
-            model = new Model(targetPathModel.getAbsolutePath());
-            modelSpk = new SpeakerModel(targetPathSpk.getAbsolutePath());
-            setUiState(State.STATE_STARTED);
-            recognizeMicrophone();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-         */
     }
 
     private void setUiState(State state) {

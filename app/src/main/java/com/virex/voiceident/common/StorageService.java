@@ -3,9 +3,8 @@ package com.virex.voiceident.common;
 import android.content.Context;
 import android.content.res.AssetManager;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.ArrayMap;
+import android.util.Log;
 
 import com.google.gson.Gson;
 import com.virex.voiceident.models.ModelInfo;
@@ -21,17 +20,15 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 
 /*
 Класс для синхронизации моделей assets -> externalstorage
  */
 public class StorageService {
-    //protected static final String TAG = org.vosk.android.StorageService.class.getSimpleName();
+    protected static final String TAG = org.vosk.android.StorageService.class.getSimpleName();
 
     public interface Callback {
-        void onComplete(ArrayList<ModelInfo> modelInfos);
+        void onComplete(ArrayList<ModelInfo> models);
         void onError(Exception exception);
     }
     private final ArrayMap<String,String> items = new ArrayMap<>();
@@ -55,28 +52,28 @@ public class StorageService {
     }
 
     public void process(){
-        Executor executor = Executors.newSingleThreadExecutor(); // change according to your requirements
-        Handler handler = new Handler(Looper.getMainLooper());
-        executor.execute(() -> {
-            ArrayList<ModelInfo> modelInfos = new ArrayList<>();
-            for (int i = 0; i < items.size(); i++) {
-                String sourcePath = items.keyAt(i);
-                String targetPath = items.valueAt(i);
-
-                try {
-                    //синхронизируем (нет папки или guid различается - (пере)распаковываем, есть папка - возвращаем информацию)
-                    final ModelInfo modelInfo = sync(context, sourcePath, targetPath);
-                    modelInfos.add(modelInfo);
-                } catch (final IOException e) {
-                    handler.post(() -> {if (callback!=null) callback.onError(e);});
-                    return;
+        AppExecutors.getInstance().mainThread().execute(new Runnable() {
+            @Override
+            public void run() {
+                ArrayList<ModelInfo> models = new ArrayList<>();
+                for (int i = 0; i < items.size(); i++) {
+                    String sourcePath = items.keyAt(i);
+                    String targetPath = items.valueAt(i);
+                    try {
+                        //синхронизируем (нет папки или guid различается - (пере)распаковываем, есть папка - возвращаем информацию)
+                        final ModelInfo modelInfo = sync(sourcePath, targetPath);
+                        models.add(modelInfo);
+                    } catch (final IOException e) {
+                        if (callback!=null) callback.onError(e);
+                        return;
+                    }
                 }
+                if (callback!=null) callback.onComplete(models);
             }
-            handler.post(() -> {if (callback!=null) callback.onComplete(modelInfos);});
         });
     }
 
-    public ModelInfo sync(Context context, String sourcePath, String targetPath) throws IOException {
+    private ModelInfo sync(String sourcePath, String targetPath) throws IOException {
         AssetManager assetManager = context.getAssets();
 
         File externalFilesDir = context.getExternalFilesDir(null);
@@ -94,9 +91,7 @@ public class StorageService {
             //если файл уже есть - не перезаписываем
             ModelInfo targetModelInfo = getModelInfo(new FileInputStream(new File(targetDir, sourcePath + "/" + this.modelJson)));
             if (sourceModelInfo.uuid.equals(targetModelInfo.uuid)) return sourceModelInfo;
-        } catch (FileNotFoundException e) {
-            // ignore
-        }
+        } catch (FileNotFoundException ignore) {}
 
         //файла нет - создаем/перезаписываем
         deleteContents(new File(sourceModelInfo.absolutePath));
@@ -107,9 +102,10 @@ public class StorageService {
     }
 
     private static ModelInfo getModelInfo(InputStream is) throws IOException {
-        Gson gson = new Gson();
-        Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8);
-        return gson.fromJson(reader, ModelInfo.class);
+        try(Reader reader = new InputStreamReader(is, StandardCharsets.UTF_8)) {
+            Gson gson = new Gson();
+            return gson.fromJson(reader, ModelInfo.class);
+        }
     }
 
     private static boolean deleteContents(File dir) {
@@ -140,9 +136,9 @@ public class StorageService {
             //папка
             File dir = new File(outPath, path);
             if (!dir.exists()) {
-                //Log.v(TAG, "Making directory " + dir.getAbsolutePath());
+                Log.v(TAG, "Making directory " + dir.getAbsolutePath());
                 if (!dir.mkdirs()) {
-                    //Log.v(TAG, "Failed to create directory " + dir.getAbsolutePath());
+                    Log.v(TAG, "Failed to create directory " + dir.getAbsolutePath());
                 }
             }
             for (String asset : assets) {
@@ -152,18 +148,17 @@ public class StorageService {
     }
 
     private static void copyFile(AssetManager assetManager, String fileName, File outPath) throws IOException {
-        InputStream in;
+        Log.v(TAG, "Copy " + fileName + " to " + outPath);
 
-       // Log.v(TAG, "Copy " + fileName + " to " + outPath);
-        in = assetManager.open(fileName);
-        OutputStream out = new FileOutputStream(outPath + "/" + fileName);
+        try(InputStream in = assetManager.open(fileName);
+            //Files.newOutputStream выдает ошибку на Android 5.0 (API 21)
+            OutputStream out = new FileOutputStream(outPath + "/" + fileName)){
 
-        byte[] buffer = new byte[4000];
-        int read;
-        while ((read = in.read(buffer)) != -1) {
-            out.write(buffer, 0, read);
+            byte[] buffer = new byte[4000];
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
         }
-        in.close();
-        out.close();
     }
 }

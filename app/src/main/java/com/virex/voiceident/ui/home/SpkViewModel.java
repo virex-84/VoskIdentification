@@ -39,7 +39,7 @@ public class SpkViewModel extends ViewModel {
     }
 
     /*
-    https://github.com/alphacep/vosk-api/blob/12f29a3415e4967e088ed09202bfb0007e5a1787/python/example/test_speaker.py#L26
+    https://github.com/alphacep/vosk-api/blob/12f29a3415e4967e088ed09202bfb0007e5a1787/python/example/test_speaker.py#L53
     def cosine_dist(x, y):
         nx = np.array(x)
         ny = np.array(y)
